@@ -1,0 +1,66 @@
+/*
+Name:        lightBot
+Created:     04/07/2021
+Author:      Petar Dropulic
+Description: a simple example that do:
+             1) parse incoming messages
+             2) if "LIGHT ON" message is received, turn on the onboard LED
+             3) if "LIGHT OFF" message is received, turn off the onboard LED
+             4) otherwise, reply to sender with a welcome message
+*/
+#include "CTBot.h"
+CTBot myBot;
+
+String ssid = "KTOS";     // REPLACE mySSID WITH YOUR WIFI SSID
+String pass = "ktosFESB"; // REPLACE myPassword YOUR WIFI PASSWORD, IF ANY
+String token = "1572090822:AAE9LuzPCQ5wXGQDmcyIID5IqX-rER5x0WA";   // REPLACE myToken WITH YOUR TELEGRAM BOT TOKEN
+uint8_t led = 2;            // the onboard ESP32 LED.    
+                                      
+void setup() {
+  // initialize the Serial
+  Serial.begin(115200);
+  Serial.println("Starting TelegramBot...");
+
+  // connect the ESP32 to the desired access point
+  myBot.wifiConnect(ssid, pass);
+
+  // set the telegram bot token
+  myBot.setTelegramToken(token);
+
+  // check if all things are ok
+  if (myBot.testConnection())
+    Serial.println("\ntestConnection OK");
+  else
+    Serial.println("\ntestConnection NOK");
+
+  // set the pin connected to the LED to act as output pin
+  pinMode(led, OUTPUT);
+  digitalWrite(led, HIGH); // turn off the led (inverted logic!)
+
+}
+
+void loop() {
+  // a variable to store telegram message data
+  TBMessage msg;
+
+  // if there is an incoming message...
+  if (myBot.getNewMessage(msg)) {
+
+    if (msg.text.equalsIgnoreCase("LIGHT OFF")) {              // if the received message is "LIGHT OFF"...
+      digitalWrite(led, LOW);                               // turn off the LED 
+      myBot.sendMessage(msg.sender.id, "Light is now OFF");  // notify the sender
+    }
+    else if (msg.text.equalsIgnoreCase("LIGHT ON")) {        // if the received message is "LIGHT ON"...
+      digitalWrite(led, HIGH);                              // turn on the LED 
+      myBot.sendMessage(msg.sender.id, "Light is now ON"); // notify the sender
+    }
+    else {                                                    // otherwise...
+      // generate the message for the sender
+      String reply;
+      reply = (String)"Welcome " + msg.sender.username + (String)". Try LIGHT ON or LIGHT OFF.";
+      myBot.sendMessage(msg.sender.id, reply);             // and send it
+    }
+  }
+  // wait 500 milliseconds
+  delay(500);
+}
